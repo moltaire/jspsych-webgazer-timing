@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="jspsych-6.3.0/jspsych.js"></script>
+    <script src="jspsych-6.3.0/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="jspsych-6.3.0/plugins/jspsych-html-button-response.js"></script>
+    <script src="jspsych-6.3.0/plugins/jspsych-webgazer-init-camera.js"></script>
+    <script src="jspsych-6.3.0/plugins/jspsych-webgazer-calibrate.js"></script>
+    <script src="jspsych-6.3.0/plugins/jspsych-webgazer-validate.js"></script>
+    <script src="jspsych-6.3.0/examples/js/webgazer.js"></script>
+    <script src="jspsych-6.3.0/extensions/jspsych-ext-webgazer.js"></script>
+
+    <link rel="stylesheet" href="jspsych-6.3.0/css/jspsych.css" />
+    <style>
+      .jspsych-content {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+
+  <body></body>
+
+  <script>
+    const nTrials = 20;
+    const trialDuration = 500;
+
+    var init_camera = {
+      type: "webgazer-init-camera",
+    };
+
+    var calibration_instructions = {
+      type: "html-button-response",
+      stimulus: `
+      <p>Great! Now the eye tracker will be calibrated to translate the image of your eyes from the webcam to a location on your screen.</p>
+      <p>To do this, you need to click a series of dots.</p>
+      <p>Keep your head still, and click on each dot as it appears. Look at the dot as you click it.</p>
+    `,
+      choices: ["Click to begin"],
+      post_trial_gap: 1000,
+    };
+
+    var calibration = {
+      on_start: function () {
+        jsPsych.extensions.webgazer.setRegressionType("threadedRidge");
+      },
+      type: "webgazer-calibrate",
+      calibration_points: [
+        [50, 50],
+        [25, 25],
+        [25, 75],
+        [75, 25],
+        [75, 75],
+      ],
+      repetitions_per_point: 1,
+      randomize_calibration_order: true,
+    };
+
+    var validation_instructions = {
+      type: "html-button-response",
+      stimulus: `
+      <p>Let's see how accurate the eye tracking is. </p>
+      <p>Keep your head still, and move your eyes to focus on each dot as it appears.</p>
+      <p>You do not need to click on the dots. Just move your eyes to look at the dots.</p>
+    `,
+      choices: ["Click to begin"],
+      post_trial_gap: 1000,
+    };
+
+    var validation = {
+      type: "webgazer-validate",
+      validation_points: [
+        [50, 50],
+        [25, 25],
+        [25, 75],
+        [75, 25],
+        [75, 75],
+      ],
+      show_validation_data: true,
+    };
+
+    duration = undefined;
+    error = undefined;
+    var t0;
+    var start = {
+      type: "html-keyboard-response",
+      stimulus: "Press spacebar to start.",
+      choices: [" "],
+      on_finish: function (data) {
+        t0 = performance.now();
+      },
+    };
+    var trial_idx = 0;
+    var errors = [];
+    var durations = [];
+    var trial = {
+      type: "html-keyboard-response",
+      on_start: function () {
+        trialStart = performance.now();
+      },
+      stimulus: function () {
+        return `<p style="font-size:40px;">Trial: ${trial_idx}</p>
+        <p style="font-size:40px;">Previous trial:</p>
+        <p style="font-size:40px;">Duration: ${Math.round(duration)} ms</p>
+        <p style="font-size:40px;">Error: ${error} ms</p>`;
+      },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: trialDuration,
+      on_finish: function (data) {
+        trial_idx++;
+        duration = performance.now() - trialStart;
+        durations.push(duration);
+        error = Math.round(duration - trialDuration);
+        errors.push(error);
+      },
+      extensions: [{ type: "webgazer" }],
+    };
+
+    var trial_proc = {
+      timeline: [trial],
+      repetitions: nTrials,
+    };
+
+    var totalError, meanError, totalDur, meanDur;
+    var results = {
+      type: "html-keyboard-response",
+      on_start: function (trial) {
+        totalError = errors.reduce((a, b) => a + b, 0);
+        meanError = totalError / errors.length || 0;
+        totalDur = durations.reduce((a, b) => a + b, 0);
+        meanDur = totalDur / durations.length || 0;
+        trial.stimulus = `
+        <p>Ran ${nTrials} trials with ${trialDuration} ms each.</p>
+        <p>Mean duration: ${Math.round(meanDur)} ms</p>
+        <p>Mean error: ${meanError} ms</p>
+        <p>Minimum error: ${Math.min(...errors)} ms</p>
+        <p>Maximum error: ${Math.max(...errors)} ms</p>
+        <p>Total time elapsed: ${Math.round(performance.now() - t0)} ms</p>
+        <p>Expected time elapsed: ${nTrials * trialDuration} ms</p>
+        <p>Error in time elapsed: ${Math.round(
+          performance.now() - t0 - nTrials * trialDuration
+        )} ms</p>
+
+        <p>Press spacebar to continue.</p>`;
+      },
+      stimulus: "",
+      choices: [" "],
+    };
+
+    var done = {
+      type: "html-button-response",
+      choices: ["CSV", "JSON", "Just continue"],
+      stimulus: `<p>Done!</p><p>If you'd like to download a copy of the data to explore, click the format you'd like below</p>`,
+      on_start: function () {},
+      on_finish: function (data) {
+        if (data.response == 0) {
+          jsPsych.data.get().localSave("csv", "webgazer-timing-data.csv");
+        }
+        if (data.response == 1) {
+          jsPsych.data.get().localSave("json", "webgazer-timing-data.json");
+        }
+        jsPsych.data.displayData("csv");
+      },
+    };
+
+    jsPsych.init({
+      timeline: [
+        init_camera,
+        calibration_instructions,
+        calibration,
+        validation_instructions,
+        validation,
+        start,
+        trial_proc,
+        results,
+        done,
+      ],
+      extensions: [{ type: "webgazer" }],
+    });
+  </script>
+</html>

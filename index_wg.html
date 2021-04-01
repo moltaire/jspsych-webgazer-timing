@@ -21,9 +21,20 @@
   <body></body>
 
   <script>
-    const nTrials = 20;
-    const trialDuration = 500;
+    // "Task" parameters
+    const nTrials = 20; // Number of trials
+    const trialDuration = 500; // Presentation duration of each trial
 
+    // Set up variables to track timing
+    var duration = undefined;
+    var error = undefined;
+    var t0;
+    var trial_idx = 0;
+    var errors = [];
+    var durations = [];
+    var totalError, meanError, totalDur, meanDur;
+
+    // Webgazer procedures
     var init_camera = {
       type: "webgazer-init-camera",
     };
@@ -40,9 +51,6 @@
     };
 
     var calibration = {
-      on_start: function () {
-        jsPsych.extensions.webgazer.setRegressionType("threadedRidge");
-      },
       type: "webgazer-calibrate",
       calibration_points: [
         [50, 50],
@@ -78,9 +86,7 @@
       show_validation_data: true,
     };
 
-    duration = undefined;
-    error = undefined;
-    var t0;
+    // Start screen to track block start
     var start = {
       type: "html-keyboard-response",
       stimulus: "Press spacebar to start.",
@@ -89,19 +95,18 @@
         t0 = performance.now();
       },
     };
-    var trial_idx = 0;
-    var errors = [];
-    var durations = [];
+
+    // Trials: Each trial shows some info for `trialDuration` ms and logs timing differences™
     var trial = {
       type: "html-keyboard-response",
       on_start: function () {
         trialStart = performance.now();
       },
       stimulus: function () {
-        return `<p style="font-size:40px;">Trial: ${trial_idx}</p>
-        <p style="font-size:40px;">Previous trial:</p>
-        <p style="font-size:40px;">Duration: ${Math.round(duration)} ms</p>
-        <p style="font-size:40px;">Error: ${error} ms</p>`;
+        return `<p>Trial: ${trial_idx}</p>
+        <p>Previous trial:</p>
+        <p>Duration: ${Math.round(duration)} ms</p>
+        <p>Error: ${error} ms</p>`;
       },
       choices: jsPsych.NO_KEYS,
       trial_duration: trialDuration,
@@ -115,12 +120,13 @@
       extensions: [{ type: "webgazer" }],
     };
 
+    // Trial procedure to run `nTrials` in total
     var trial_proc = {
       timeline: [trial],
       repetitions: nTrials,
     };
 
-    var totalError, meanError, totalDur, meanDur;
+    // Results screen where average durations and errors are calculated and displayed
     var results = {
       type: "html-keyboard-response",
       on_start: function (trial) {
@@ -146,6 +152,7 @@
       choices: [" "],
     };
 
+    // Allow data to be downloaded
     var done = {
       type: "html-button-response",
       choices: ["CSV", "JSON", "Just continue"],

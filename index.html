@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="jspsych-6.3.0/jspsych.js"></script>
-    <script src="jspsych-6.3.0/plugins/jspsych-html-keyboard-response.js"></script>
-    <script src="jspsych-6.3.0/plugins/jspsych-html-button-response.js"></script>
-    <script src="jspsych-6.3.0/plugins/jspsych-webgazer-init-camera.js"></script>
-    <script src="jspsych-6.3.0/plugins/jspsych-webgazer-calibrate.js"></script>
-    <script src="jspsych-6.3.0/plugins/jspsych-webgazer-validate.js"></script>
-    <script src="jspsych-6.3.0/examples/js/webgazer.js"></script>
-    <script src="jspsych-6.3.0/extensions/jspsych-ext-webgazer.js"></script>
+    <script src="jspsych-6.3.1/jspsych.js"></script>
+    <script src="jspsych-6.3.1/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="jspsych-6.3.1/plugins/jspsych-html-button-response.js"></script>
+    <script src="jspsych-6.3.1/plugins/jspsych-webgazer-init-camera.js"></script>
+    <script src="jspsych-6.3.1/plugins/jspsych-webgazer-calibrate.js"></script>
+    <script src="jspsych-6.3.1/plugins/jspsych-webgazer-validate.js"></script>
+    <script src="jspsych-6.3.1/examples/js/webgazer/webgazer.js"></script>
+    <script src="jspsych-6.3.1/extensions/jspsych-ext-webgazer.js"></script>
 
     <link rel="stylesheet" href="jspsych-6.3.0/css/jspsych.css" />
     <style>
@@ -103,10 +103,12 @@
         trialStart = performance.now();
       },
       stimulus: function () {
-        return `<p>Trial: ${trial_idx}</p>
-        <p>Previous trial:</p>
-        <p>Duration: ${Math.round(duration)} ms</p>
-        <p>Error: ${error} ms</p>`;
+        return `<div id='target'>
+          <p>Trial: ${trial_idx}</p>
+          <p>Previous trial:</p>
+          <p>Duration: ${Math.round(duration)} ms</p>
+          <p>Error: ${error} ms</p>
+          </div>`;
       },
       choices: jsPsych.NO_KEYS,
       trial_duration: trialDuration,
@@ -117,7 +119,7 @@
         error = Math.round(duration - trialDuration);
         errors.push(error);
       },
-      extensions: [{ type: "webgazer" }],
+      extensions: [{ type: "webgazer", params: { targets: ["#target"] } }],
     };
 
     // Trial procedure to run `nTrials` in total
